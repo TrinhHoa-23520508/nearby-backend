@@ -1,13 +1,38 @@
+# Local development services, started automatically by spring-boot-docker-compose.
+# Values come from .env; the defaults match .env.example.
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgis/postgis:17-3.5'
+    labels:
+      org.springframework.boot.service-connection: postgres
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_DB: ${POSTGRES_DB:-nearby}
+      POSTGRES_USER: ${POSTGRES_USER:-nearby}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nearby}
     ports:
-      - '5432'
+      # Not 5432: a PostgreSQL installed directly on the host usually owns that port.
+      - '${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
   redis:
-    image: 'redis:latest'
+    image: 'redis:7.4-alpine'
     ports:
-      - '6379'
+      - '${REDIS_PORT:-6379}:6379'
+  minio:
+    # Community build: upstream MinIO stopped publishing Docker images.
+    image: 'pgsty/minio:RELEASE.2026-08-04T00-00-00Z'
+    command: server /data --console-address ":9001"
+    labels:
+      org.springframework.boot.ignore: true
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-nearby}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-nearby-secret}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  miniodata:
