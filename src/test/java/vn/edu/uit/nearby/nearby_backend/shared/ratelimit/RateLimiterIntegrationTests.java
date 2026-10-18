@@ -55,6 +55,47 @@ class RateLimiterIntegrationTests {
 	}
 
 	@Test
+	void keyIsExhaustedOnceTheLimitIsReached() {
+		rateLimiter.tryAcquire(key, 2, WINDOW);
+		assertThat(rateLimiter.isExhausted(key, 2)).isFalse();
+
+		rateLimiter.tryAcquire(key, 2, WINDOW);
+
+		assertThat(rateLimiter.isExhausted(key, 2)).isTrue();
+	}
+
+	@Test
+	void unusedKeyIsNotExhaustedAndHasNoRemainingWindow() {
+		assertThat(rateLimiter.isExhausted(key, 1)).isFalse();
+		assertThat(rateLimiter.remainingWindow(key)).isEqualTo(Duration.ZERO);
+	}
+
+	@Test
+	void remainingWindowCountsDownFromTheFirstCall() {
+		rateLimiter.tryAcquire(key, 1, WINDOW);
+
+		assertThat(rateLimiter.remainingWindow(key)).isPositive().isLessThanOrEqualTo(WINDOW);
+	}
+
+	@Test
+	void resetClearsTheCounter() {
+		rateLimiter.tryAcquire(key, 1, WINDOW);
+
+		rateLimiter.reset(key);
+
+		assertThat(rateLimiter.tryAcquire(key, 1, WINDOW)).isTrue();
+	}
+
+	@Test
+	void rejectionCarriesTheTimeUntilTheWindowEnds() {
+		rateLimiter.acquireOrThrow(key, 1, WINDOW);
+
+		assertThatThrownBy(() -> rateLimiter.acquireOrThrow(key, 1, WINDOW))
+			.isInstanceOfSatisfying(RateLimitExceededException.class, ex -> assertThat(ex.getRetryAfter()).get()
+				.satisfies(retryAfter -> assertThat(retryAfter).isPositive().isLessThanOrEqualTo(WINDOW)));
+	}
+
+	@Test
 	void keysAreCountedIndependently() {
 		rateLimiter.tryAcquire(key, 1, WINDOW);
 

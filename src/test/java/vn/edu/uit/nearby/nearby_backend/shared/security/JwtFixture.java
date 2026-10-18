@@ -2,6 +2,7 @@ package vn.edu.uit.nearby.nearby_backend.shared.security;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -22,7 +23,7 @@ public final class JwtFixture {
 	}
 
 	public static JwtDecoder decoder() {
-		return CONFIG.jwtDecoder(CONFIG.jwtSigningKey(PROPERTIES), PROPERTIES);
+		return CONFIG.jwtDecoder(CONFIG.jwtSigningKey(PROPERTIES), PROPERTIES, List.of());
 	}
 
 	public static TokenService tokenService(JwtProperties properties, Clock clock) {

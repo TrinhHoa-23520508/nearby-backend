@@ -4,9 +4,19 @@ public final class ApiPaths {
 
 	public static final String API_PATTERN = "/api/**";
 
-	public static final String AUTH_PATTERN = "/api/v1/auth/**";
+	public static final String API_V1 = "/api/v1";
 
-	public static final String ADMIN_PATTERN = "/api/v1/admin/**";
+	public static final String AUTH_BASE = API_V1 + "/auth";
+
+	public static final String AUTH_PATTERN = AUTH_BASE + "/**";
+
+	public static final String CURRENT_USER_BASE = API_V1 + "/users/me";
+
+	public static final String ADMIN_BASE = API_V1 + "/admin";
+
+	public static final String ADMIN_PATTERN = ADMIN_BASE + "/**";
+
+	public static final String ADMIN_USERS_BASE = ADMIN_BASE + "/users";
 
 	public static final String TEST_BASE = "/api/test";
 

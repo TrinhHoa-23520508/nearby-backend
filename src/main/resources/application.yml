@@ -35,6 +35,13 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
 
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
+
   jackson:
     default-property-inclusion: non_null
 
@@ -75,6 +82,9 @@ management:
       probes:
         enabled: true
       show-details: when-authorized
+  health:
+    mail:
+      enabled: ${MAIL_ENABLED:false}
   metrics:
     tags:
       application: ${spring.application.name}
@@ -102,6 +112,19 @@ app:
     presign-ttl: ${MINIO_PRESIGN_TTL:10m}
   idempotency:
     ttl: ${IDEMPOTENCY_TTL:24h}
+  identity:
+    # The token is appended as ?token=...; the app or web page posts it back to the API.
+    email-verification-url: ${EMAIL_VERIFICATION_URL:nearby://verify-email}
+    password-reset-url: ${PASSWORD_RESET_URL:nearby://reset-password}
+    mail:
+      # false: emails are written to the log instead of being sent (local development).
+      enabled: ${MAIL_ENABLED:false}
+      from: ${MAIL_FROM:no-reply@nearby.local}
+    bootstrap-admin:
+      # Created on startup when both are set and no account uses the email yet.
+      email: ${ADMIN_EMAIL:}
+      password: ${ADMIN_PASSWORD:}
+      display-name: ${ADMIN_DISPLAY_NAME:Nearby Admin}
 
 logging:
   level:

@@ -2,6 +2,7 @@ package vn.edu.uit.nearby.nearby_backend.shared.storage;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -14,12 +15,17 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
+import io.minio.StatObjectArgs;
+import io.minio.StatObjectResponse;
+import io.minio.errors.ErrorResponseException;
 import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 public class MinioImageStorage implements ImageStorage {
+
+	private static final String NO_SUCH_KEY = "NoSuchKey";
 
 	private final StorageProperties properties;
 
@@ -45,6 +51,24 @@ public class MinioImageStorage implements ImageStorage {
 	@Override
 	public PresignedUrl presignDownload(String objectKey) {
 		return presign(Method.GET, objectKey, Map.of());
+	}
+
+	@Override
+	public Optional<StoredObject> find(String objectKey) {
+		try {
+			StatObjectResponse stat = internalClient
+				.statObject(StatObjectArgs.builder().bucket(properties.bucket()).object(objectKey).build());
+			return Optional.of(new StoredObject(stat.size(), stat.contentType()));
+		}
+		catch (ErrorResponseException ex) {
+			if (NO_SUCH_KEY.equals(ex.errorResponse().code())) {
+				return Optional.empty();
+			}
+			throw new StorageException("Failed to read metadata of " + objectKey, ex);
+		}
+		catch (Exception ex) {
+			throw new StorageException("Failed to read metadata of " + objectKey, ex);
+		}
 	}
 
 	@Override

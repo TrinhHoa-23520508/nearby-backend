@@ -1,8 +1,10 @@
 package vn.edu.uit.nearby.nearby_backend.shared.error;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,10 +22,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import vn.edu.uit.nearby.nearby_backend.shared.constant.ErrorCodes;
 import vn.edu.uit.nearby.nearby_backend.shared.constant.SecurityConstants;
+import vn.edu.uit.nearby.nearby_backend.shared.security.CurrentUser;
 
 @Slf4j
 @RestControllerAdvice
@@ -32,7 +36,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(BusinessException.class)
 	ResponseEntity<ProblemDetail> handleBusiness(BusinessException ex) {
 		HttpStatus status = statusOf(ex);
-		return ResponseEntity.status(status).body(problem(status, ex.getCode(), ex.getMessage()));
+		ProblemDetail problem = problem(status, ex.getCode(), ex.getMessage());
+		ex.getProperties().forEach(problem::setProperty);
+		ResponseEntity.BodyBuilder response = ResponseEntity.status(status);
+		if (ex instanceof RateLimitExceededException rateLimited) {
+			rateLimited.getRetryAfter()
+				.ifPresent(retryAfter -> response.header(HttpHeaders.RETRY_AFTER, retryAfterSeconds(retryAfter)));
+		}
+		return response.body(problem);
 	}
 
 	@ExceptionHandler(AuthenticationException.class)
@@ -43,7 +54,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	@ExceptionHandler(AccessDeniedException.class)
-	ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+	ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+		log.warn("Access denied for user {} on {} {}", CurrentUser.id().map(UUID::toString).orElse("anonymous"),
+				request.getMethod(), request.getRequestURI());
 		return problem(HttpStatus.FORBIDDEN, ErrorCodes.ACCESS_DENIED, "You are not allowed to perform this action.");
 	}
 
@@ -81,7 +94,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			case InvalidRequestException e -> HttpStatus.BAD_REQUEST;
 			case OperationNotAllowedException e -> HttpStatus.FORBIDDEN;
 			case RateLimitExceededException e -> HttpStatus.TOO_MANY_REQUESTS;
+			case AuthenticationFailedException e -> HttpStatus.UNAUTHORIZED;
 		};
+	}
+
+	private static String retryAfterSeconds(Duration retryAfter) {
+		return String.valueOf(Math.max(1, retryAfter.toSeconds()));
 	}
 
 	private static List<Map<String, String>> fieldErrorsOf(MethodArgumentNotValidException ex) {
