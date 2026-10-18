@@ -27,6 +27,10 @@ public record CursorPage<T>(List<T> items, @Nullable String nextCursor, boolean 
 		return new CursorPage<>(List.copyOf(items), nextCursor, hasMore);
 	}
 
+	public <R> CursorPage<R> map(Function<T, R> mapper) {
+		return new CursorPage<>(items.stream().map(mapper).toList(), nextCursor, hasMore);
+	}
+
 	public static int clampLimit(@Nullable Integer requestedLimit) {
 		if (requestedLimit == null || requestedLimit <= 0) {
 			return ApiLimits.DEFAULT_PAGE_SIZE;

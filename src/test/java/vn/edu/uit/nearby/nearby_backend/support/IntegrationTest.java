@@ -19,7 +19,8 @@ import vn.edu.uit.nearby.nearby_backend.TestcontainersConfiguration;
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({ TestcontainersConfiguration.class, ProbeController.class })
+@Import({ TestcontainersConfiguration.class, ProbeController.class, RecordingAccountMailer.class,
+		InMemoryImageStorage.class })
 public @interface IntegrationTest {
 
 }

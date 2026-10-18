@@ -6,6 +6,7 @@ Backend for the hyperlocal second-hand marketplace. It is a Spring Boot 4.1 / Ja
 - **CI:** [docs/setup-ci.md](docs/setup-ci.md)
 - **Deployment:** [deploy/README.md](deploy/README.md)
 - **Coding rules:** [.claude/clean-code-skill/SKILL.md](.claude/clean-code-skill/SKILL.md)
+- **API contracts:** [docs/api/identity-api.md](docs/api/identity-api.md) (accounts and authorization). Postman: [docs/postman/](docs/postman/)
 
 ## Quick start
 
@@ -29,8 +30,10 @@ cp .env.example .env
 
 Each module is split into `web` / `application` / `domain` / `infrastructure` layers. Only the module's root package is public, and it holds two kinds of things:
 
-- **Facade interfaces**, for example `identity.AppParameters`.
-- **Domain events** published by that module, for example `transaction.TransactionCompleted`. They go through the `event_publication` outbox.
+- **Facade interfaces**, for example `identity.AppParameters` and `identity.LocationConsents`.
+- **Domain events** published by that module, for example `identity.UserBanned`. They go through the `event_publication` outbox.
+
+Application services are declared as an interface (`AuthService`) with one implementation (`AuthServiceImpl`). Controllers depend only on the interface.
 
 `ModularityTests` enforces these boundaries, so a violation fails the build. Module docs are generated to `build/spring-modulith-docs/`.
 

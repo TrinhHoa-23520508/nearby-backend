@@ -1,13 +1,19 @@
 package vn.edu.uit.nearby.nearby_backend.shared.security;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -33,12 +39,25 @@ public class JwtConfig {
 		return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSigningKey));
 	}
 
+	/**
+	 * Modules contribute extra checks (for example rejecting tokens of a locked account)
+	 * by declaring an {@code OAuth2TokenValidator<Jwt>} bean.
+	 */
 	@Bean
-	JwtDecoder jwtDecoder(SecretKey jwtSigningKey, JwtProperties properties) {
+	JwtDecoder jwtDecoder(SecretKey jwtSigningKey, JwtProperties properties,
+			ObjectProvider<OAuth2TokenValidator<Jwt>> moduleValidators) {
+		return jwtDecoder(jwtSigningKey, properties, moduleValidators.orderedStream().toList());
+	}
+
+	JwtDecoder jwtDecoder(SecretKey jwtSigningKey, JwtProperties properties,
+			List<OAuth2TokenValidator<Jwt>> moduleValidators) {
 		NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(jwtSigningKey)
 			.macAlgorithm(MacAlgorithm.HS256)
 			.build();
-		decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.issuer()));
+		List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
+		validators.add(JwtValidators.createDefaultWithIssuer(properties.issuer()));
+		validators.addAll(moduleValidators);
+		decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
 		return decoder;
 	}
 

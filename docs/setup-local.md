@@ -32,6 +32,9 @@ Key variables:
 | `MINIO_ENDPOINT` | `http://localhost:9000` | Address the backend uses to reach MinIO. |
 | `MINIO_PUBLIC_ENDPOINT` | `http://10.0.2.2:9000` | Host the Android app uses for presigned image URLs (see section 6). |
 | `SERVER_PORT` | `8080` | API port. |
+| `MAIL_ENABLED` | `false` | When `false`, verification and password reset links are written to the backend log (search for `[mail disabled]`) instead of being emailed. |
+| `EMAIL_VERIFICATION_URL` / `PASSWORD_RESET_URL` | `nearby://...` | Links in account emails. The token is appended as `?token=...`. |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@nearby.local` / `Nearby2026` | First admin account, created on startup if no account uses the email yet. |
 
 Real OS environment variables, and IntelliJ *Run Configuration* variables, always override values in `.env`.
 
@@ -124,6 +127,7 @@ Rules:
 - Inside the emulator, `localhost` is the emulator itself, not your computer.
 - Android blocks plain HTTP by default. For debug builds, add a `network_security_config` that allows cleartext traffic to `10.0.2.2` or your LAN IP.
 - Presigned URLs are signed for a specific host, so `MINIO_PUBLIC_ENDPOINT` must be exactly the host the phone calls. Change it in `.env` and restart the app.
+- API contracts are in [docs/api/](api/). To try the account flow, import `docs/postman/nearby-identity.postman_collection.json` and `nearby-local.postman_environment.json` into Postman, then run the folders in order.
 - Every API except `/api/v1/auth/**` needs `Authorization: Bearer <access-token>`. Errors follow RFC 9457 (`application/problem+json`) and include a `code` field.
 - WebSocket: STOMP at `ws://<host>:8080/ws`. Send `Authorization: Bearer <token>` in the CONNECT frame.
 
